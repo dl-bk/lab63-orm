@@ -26,13 +26,7 @@ class Person(Base):
     country = Column(String(50))
     birth_date = Column(Date)
 
-def check_query(query):
-    if not search(r'\bpeople\b', query, IGNORECASE):
-        raise Exception(f"Incorrect table name. Name must be 'people'")
-    
-    if search(r'\bupdate\b', query, IGNORECASE) or search(r'\bdelete\b', query, IGNORECASE):
-        if not search(r'\bwhere\b', query, IGNORECASE):
-            raise Exception("Update or Delete query must contain 'Where' statement")
+
 
 #створення таблиці
 Base.metadata.create_all(engine)
@@ -46,23 +40,41 @@ session = Session()
 # session.add_all([person1, person2])
 # session.commit()
 
-
-
+def show_all(result):
+    rows = result.fetchall()
+    if rows:
+        print("Result: ")
+        for row in rows:
+            print(row)
+    else:
+        print("No result")
+    
 while True:
-    user_query = input("Enter query or 'exit' to exit: ")
-    if user_query.lower() == 'exit':
-        break
+    
+
+    choice = str(input("""
+    1. Show all people
+    2. Show people by city
+    3.Show people by country
+    0.Exit
+    ---->  """))
 
     try:
-        check_query(user_query)
-        result = session.execute(text(user_query))
-        rows = result.fetchall()
-        if rows:
-            print("Result: ")
-            for row in rows:
-                print(row)
-        else:
-            print("No result")
+        if choice == '0':
+            break
+        elif choice == '1':
+            result = session.execute(text("select * from people"))
+            show_all(result)
+        elif choice == '2':
+            city = input("Enter city: ")
+            result = session.execute(text(f"select * from people where city = '{city}'"))
+            show_all(result)
+        elif choice == '3':
+            country = input("Enter country: ")
+            result = session.execute(text(f"select * from people where country = '{country}'"))
+            show_all(result)
+       
+
     except Exception as e:
         print(f"Query error: {e}")
 
