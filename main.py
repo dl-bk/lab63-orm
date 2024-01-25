@@ -56,6 +56,7 @@ while True:
     1. Show all people
     2. Show people by city
     3.Show people by country
+    4.Show people by country or city
     0.Exit
     ---->  """))
 
@@ -73,7 +74,11 @@ while True:
             country = input("Enter country: ")
             result = session.execute(text(f"select * from people where country = '{country}'"))
             show_all(result)
-       
+        elif choice == '4':
+            city = input("Enter city: ")
+            country = input("Enter country: ")
+            result = session.execute(text(f"select * from people where country = '{country}' OR city = '{city}'"))
+            show_all(result)
 
     except Exception as e:
         print(f"Query error: {e}")
