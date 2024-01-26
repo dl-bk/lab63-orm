@@ -1,8 +1,10 @@
-from sqlalchemy import create_engine, Column, Integer, String, Sequence, Date
+from sqlalchemy import create_engine, Column, Integer, String, Sequence, Date, MetaData
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.sql import text
+from sqlalchemy.sql import text, insert, update, delete
 import json
 from re import search, IGNORECASE
+
+TABLENAME = 'people'
 # Зчитування конфігураційних даних з файлу
 with open('config.json') as f:
     config = json.load(f)
@@ -35,6 +37,11 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+connection = engine.connect()
+metadata = MetaData()
+
+metadata.reflect(bind=engine)
+
 # person1 = Person(first_name='John', last_name='Doe', city='New York', country='USA', birth_date='1990-01-15')
 # person2 = Person(first_name='Jane', last_name='Smith', city='London', country='UK', birth_date='1985-03-22')
 # session.add_all([person1, person2])
@@ -48,7 +55,74 @@ def show_all(result):
             print(row)
     else:
         print("No result")
+
+def insert_row(table_name):
     
+    if table_name in metadata.tables:
+        table = metadata.tables[table_name]
+        columns = table.columns.keys()
+        values = {}
+        for column in columns:
+            value = input(f"Enter value for column {column}: ")
+            values[column] = value
+        query = insert(table).values(values)
+        try:
+            connection.execute(query)
+            connection.commit()
+        except Exception as e:
+            connection.rollback()
+            print(f"Error {str(e)}")
+    else:
+        print("table is not found")
+
+def update_row(table_name):
+    if table_name in metadata.tables:
+        table = metadata.tables[table_name]
+        columns = table.columns.keys()
+        print("Available columns for update:")
+        for column in columns:
+            print(f"{column}")
+        condition_column = input("Write column for condition statement: ")
+        if condition_column in columns:
+            condition_value = input(f"Write 'where' value for column {condition_column}: ")
+            values = {}
+            for column in columns:
+                value = input(f"Enter value for column {column}: ")
+                values[column] = value
+            
+            query = update(table).where(getattr(table.c, condition_column) == condition_value).values(values)
+
+            try:
+                connection.execute(query)
+                connection.commit()
+                print("Successfull update")
+            except Exception as e:
+                connection.rollback()
+                print(f"Error {str(e)}")
+        else:
+            print("Error: Column does not exists")
+
+def delete_row(table_name):
+    if table_name in metadata.tables:
+        table = metadata.tables[table_name]
+        columns = table.columns.keys()
+        print("Available columns for delete:")
+        for column in columns:
+            print(f"{column}")
+        condition_column = input("Write column for condition statement: ")
+        if condition_column in columns:
+            condition_value = input(f"Write 'where' value for column {condition_column}: ")
+            query = delete(table).where(getattr(table.c, condition_column) == condition_value)
+            try:
+                connection.execute(query)
+                connection.commit()
+                print("Successfull delete")
+            except Exception as e:
+                connection.rollback()
+                print(f"Error {str(e)}")
+        else:
+            print("Error: Column does not exists")
+
 while True:
     
 
@@ -57,6 +131,9 @@ while True:
     2. Show people by city
     3.Show people by country
     4.Show people by country or city
+    5.Insert
+    6.Update
+    7.Delete
     0.Exit
     ---->  """))
 
@@ -64,21 +141,28 @@ while True:
         if choice == '0':
             break
         elif choice == '1':
-            result = session.execute(text("select * from people"))
+            result = session.execute(text(f"select * from {TABLENAME}"))
             show_all(result)
         elif choice == '2':
             city = input("Enter city: ")
-            result = session.execute(text(f"select * from people where city = '{city}'"))
+            result = session.execute(text(f"select * from {TABLENAME} where city = '{city}'"))
             show_all(result)
         elif choice == '3':
             country = input("Enter country: ")
-            result = session.execute(text(f"select * from people where country = '{country}'"))
+            result = session.execute(text(f"select * from {TABLENAME} where country = '{country}'"))
             show_all(result)
         elif choice == '4':
             city = input("Enter city: ")
             country = input("Enter country: ")
-            result = session.execute(text(f"select * from people where country = '{country}' OR city = '{city}'"))
+            result = session.execute(text(f"select * from {TABLENAME} where country = '{country}' OR city = '{city}'"))
             show_all(result)
+        elif choice == '5':
+            insert_row(TABLENAME)
+        elif choice == '6':
+            update_row(TABLENAME)
+        elif choice == '7':
+            delete_row(TABLENAME)
+
 
     except Exception as e:
         print(f"Query error: {e}")
