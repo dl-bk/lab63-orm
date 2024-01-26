@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.sql import text, insert, update, delete
 import json
 from re import search, IGNORECASE
+from datetime import date
 
 TABLENAME = 'people'
 # Зчитування конфігураційних даних з файлу
@@ -46,15 +47,39 @@ metadata.reflect(bind=engine)
 # person2 = Person(first_name='Jane', last_name='Smith', city='London', country='UK', birth_date='1985-03-22')
 # session.add_all([person1, person2])
 # session.commit()
+def row_to_dict(row):
+    return row._asdict()
+
+def serialize_date(obj):
+    if isinstance(obj, date):
+        return obj.isoformat()
+    raise TypeError("Type not serializable")
+
+
+def save_data(filename, rows):
+    data = [row_to_dict(row) for row in rows]
+    with open(filename, 'w') as wfile:
+        json.dump(data, wfile, indent=2, default=serialize_date)
+        print("saved")
 
 def show_all(result):
     rows = result.fetchall()
-    if rows:
-        print("Result: ")
-        for row in rows:
-            print(row)
-    else:
-        print("No result")
+    while True:
+        choice = input("Save results? y/n: ")
+        if choice.lower() == 'y':
+            save_data('data.json', rows)
+            break
+        elif choice.lower() == 'n':
+            if rows:
+                print("Result: ")
+                for row in rows:
+                    print(row)
+                break
+            else:
+                print("No result")
+                break
+        else:
+            print("incorrect action")
 
 def insert_row(table_name):
     
@@ -122,6 +147,7 @@ def delete_row(table_name):
                 print(f"Error {str(e)}")
         else:
             print("Error: Column does not exists")
+
 
 while True:
     
